@@ -12,29 +12,19 @@
 const levelup = require('levelup')
 const memdown = require('memdown')
 
-const db = levelup(new memdown())
+const db = levelup(memdown())
 
-db.put('hey', 'you', function (err) {
+db.put('hey', 'you', (err) => {
   if (err) throw err
 
-  db.createReadStream()
-    .on('data', function (kv) {
-      console.log('%s: %s', kv.key, kv.value)
-    })
-    .on('end', function () {
-      console.log('done')
-    })
+  db.get('hey', { asBuffer: false }, (err, value) => {
+    if (err) throw err
+    console.log(value) // 'you'
+  })
 })
 ```
 
 Your data is discarded when the process ends or you release a reference to the database. Note as well, though the internals of `memdown` operate synchronously - [`levelup`] does not.
-
-Running our example gives:
-
-```
-hey: you
-done
-```
 
 Browser support
 ----
@@ -42,6 +32,83 @@ Browser support
 [![Sauce Test Status](https://saucelabs.com/browser-matrix/level-ci.svg)](https://saucelabs.com/u/level-ci)
 
 `memdown` requires a ES5-capable browser. If you're using one that's isn't (e.g. PhantomJS, Android < 4.4, IE < 10) then you will need [es5-shim](https://github.com/es-shims/es5-shim).
+
+## Data types
+
+Unlike [`leveldown`], `memdown` does not stringify keys or values. This means that in addition to Buffers, you can store any JS type without the need for [`encoding-down`]. The only exceptions are `null` and `undefined` values. These are converted to empty strings.
+
+```js
+const db = levelup(memdown())
+
+db.put(12, true, (err) => {
+  if (err) throw err
+
+  db.createReadStream({
+    keyAsBuffer: false,
+    valueAsBuffer: false
+  }).on('data', (entry) => {
+    console.log(typeof entry.key) // 'number'
+    console.log(typeof entry.value) // 'boolean'
+  })
+})
+```
+
+Practically speaking, few types are suitable for keys. You can use Buffers or strings, which sort lexicographically, or numbers or Dates, which sort naturally. That's about it.
+
+If you desire normalization for keys and values (e.g. to stringify numbers), wrap `memdown` with [`encoding-down`]. Alternatively install [`level-mem`] which conveniently bundles [`levelup`], `memdown` and [`encoding-down`]. Such an approach is also recommended if you want to achieve universal (isomorphic) behavior. For example, you could have [`leveldown`] in a backend and `memdown` in the frontend.
+
+```js
+const encode = require('encoding-down')
+const db = levelup(encode(memdown()))
+
+db.put(12, true, (err) => {
+  if (err) throw err
+
+  db.createReadStream({
+    keyAsBuffer: false,
+    valueAsBuffer: false
+  }).on('data', (entry) => {
+    console.log(typeof entry.key) // 'string'
+    console.log(typeof entry.value) // 'string'
+  })
+})
+```
+
+## Snapshot guarantees
+
+A `memdown` store is backed by [a fully persistent data structure](https://www.npmjs.com/package/functional-red-black-tree) and thus has snapshot guarantees. Meaning that reads operate on a snapshot in time, unaffected by simultaneous writes. Do note `memdown` cannot uphold this guarantee for (copies of) object references. If you store object values, be mindful of mutating referenced objects:
+
+```js
+const db = levelup(memdown())
+const obj = { thing: 'original' }
+
+db.put('key', obj, (err) => {
+  obj.thing = 'modified'
+
+  db.get('key', { asBuffer: false }, (err, value) => {
+    console.log(value === obj) // true
+    console.log(obj.thing) // 'modified'
+  })
+})
+```
+
+Conversely, when `memdown` is wrapped with [`encoding-down`] it stores representations rather than references.
+
+```js
+const encode = require('encoding-down')
+
+const db = levelup(encode(memdown(), { valueEncoding: 'json' }))
+const obj = { thing: 'original' }
+
+db.put('key', obj, (err) => {
+  obj.thing = 'modified'
+
+  db.get('key', { asBuffer: false }, (err, value) => {
+    console.log(value === obj) // false
+    console.log(obj.thing) // 'original'
+  })
+})
+```
 
 Test
 ----
@@ -61,3 +128,6 @@ Licence
 
 [`abstract-leveldown`]: https://github.com/Level/abstract-leveldown
 [`levelup`]: https://github.com/Level/levelup
+[`encoding-down`]: https://github.com/Level/encoding-down
+[`leveldown`]: https://github.com/Level/leveldown
+[`level-mem`]: https://github.com/Level/mem
