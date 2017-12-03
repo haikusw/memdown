@@ -1,6 +1,6 @@
 # memdown <img alt="LevelDB Logo" height="20" src="http://leveldb.org/img/logo.svg" />
 
-> In-memory `abstract-leveldown` store for Node.js and browsers.
+> In-memory [`abstract-leveldown`] store for Node.js and browsers.
 
 [![Travis](https://secure.travis-ci.org/Level/memdown.png)](http://travis-ci.org/Level/memdown) [![Coverage Status](https://coveralls.io/repos/Level/memdown/badge.svg?branch=master&service=github)](https://coveralls.io/github/Level/memdown?branch=master) [![npm](https://img.shields.io/npm/v/memdown.svg)](https://www.npmjs.com/package/memdown) [![npm](https://img.shields.io/npm/dm/memdown.svg)](https://www.npmjs.com/package/memdown) [![Greenkeeper badge](https://badges.greenkeeper.io/Level/memdown.svg)](https://greenkeeper.io/)
 
@@ -27,7 +27,7 @@ db.put('hey', 'you', function (err) {
 })
 ```
 
-Your data is discarded when the process ends or you release a reference to the database. Note as well, though the internals of `memdown` operate synchronously - `levelup` does not.
+Your data is discarded when the process ends or you release a reference to the database. Note as well, though the internals of `memdown` operate synchronously - [`levelup`] does not.
 
 Running our example gives:
 
@@ -58,3 +58,6 @@ Licence
 ---
 
 `memdown` is Copyright (c) 2013-2017 Rod Vagg [@rvagg](https://twitter.com/rvagg) and licensed under the MIT licence. All rights not explicitly granted in the MIT license are reserved. See the included LICENSE file for more details.
+
+[`abstract-leveldown`]: https://github.com/Level/abstract-leveldown
+[`levelup`]: https://github.com/Level/levelup
